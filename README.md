@@ -60,6 +60,22 @@ The firmware publishes discovery automatically. Add weight-aware calories + a re
 **Fitness dashboard** from [`homeassistant/`](homeassistant/) (set your scale's weight entity
 in one placeholder).
 
+## Enclosure (3D-printed)
+
+A parametric **OpenSCAD** rugged-box for a single ESP32-S3 SuperMini — filament-pin
+hinge, snap-fit lid, heat-relief grill, and a **flush USB-C cutout**. Both the `.scad`
+source and ready-to-print **STLs** ship in [`enclosure/`](enclosure/).
+
+Just print `enclosure/treadmill-s3-bottom.stl` + `treadmill-s3-top.stl` (PETG/PLA) and
+join them with a ~14 mm snip of 1.75 mm filament as the hinge pin — no screws. To tweak
+board dimensions / cutout and re-export the STLs:
+
+```bash
+cd enclosure
+openscad -D 'Part="bottom"' -o treadmill-s3-bottom.stl treadmill-s3-enclosure.scad
+openscad -D 'Part="top"'    -o treadmill-s3-top.stl    treadmill-s3-enclosure.scad
+```
+
 ## Repository layout
 
 | Path | What |
