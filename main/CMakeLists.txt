@@ -1,0 +1,28 @@
+idf_component_register(
+    SRCS
+        "main.c"
+        "nvs_config.c"
+        "ble_treadmill.c"
+        "wifi_manager.c"
+        "mqtt_manager.c"
+        "ota_handler.c"
+        "ble_prov.c"
+        "captive_portal.c"
+        "led_status.c"
+    INCLUDE_DIRS "."
+    REQUIRES
+        esp_wifi
+        bt
+        nvs_flash
+        esp_http_server
+        esp_https_ota
+        app_update
+        mqtt
+        json
+        mdns
+        esp_timer
+        esp-tls
+        mbedtls
+        driver
+        esp_netif
+)

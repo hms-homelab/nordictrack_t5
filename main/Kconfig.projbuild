@@ -1,0 +1,46 @@
+menu "Treadmill S3 Bridge"
+
+    config TX_POWER_QDBM
+        int "WiFi max TX power (quarter-dBm)"
+        default 34
+        range 8 84
+        help
+            Applied via esp_wifi_set_max_tx_power() after esp_wifi_start().
+            Units are quarter-dBm (e.g. 34 = 8.5 dBm, 44 = 11 dBm, 84 = 21 dBm).
+
+    config LED_GPIO
+        int "Status LED GPIO"
+        default 8
+        help
+            GPIO driving the status LED (SuperMini onboard LED is GPIO8).
+
+    config FORCE_PROV_GPIO
+        int "Force-provisioning GPIO (boot button)"
+        default 0
+        help
+            Hold this GPIO low at boot to force PROV mode (clear config).
+            GPIO0 is the SuperMini BOOT button.
+
+    config POLL_INTERVAL_MS
+        int "Telemetry poll/publish interval (ms)"
+        default 200
+        range 50 5000
+        help
+            How often treadmill telemetry is sampled and published to MQTT.
+
+    config AP_SSID
+        string "SoftAP SSID (PROV mode)"
+        default "Treadmill-Setup"
+
+    config AP_PASS
+        string "SoftAP password (PROV mode, empty = open)"
+        default ""
+
+    config MQTT_TOPIC_PREFIX
+        string "Default MQTT topic prefix"
+        default "treadmill"
+        help
+            Base topic prefix for telemetry and Home Assistant discovery.
+            May be overridden at runtime via provisioning.
+
+endmenu

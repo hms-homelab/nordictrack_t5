@@ -1,0 +1,118 @@
+# Fitness dashboard for the ESP32-S3 iFit treadmill bridge.
+# Import: Settings -> Dashboards -> Add -> New from scratch -> open -> ✏️ -> ⋮ ->
+#         Raw configuration editor -> paste this -> Save.
+# (Or register as a YAML dashboard in configuration.yaml under lovelace: dashboards:.)
+#
+# >>> REPLACE THE PLACEHOLDERS in the "Body" view <<<
+#   sensor.YOUR_BODY_WEIGHT       -> your scale weight entity
+#   (optional) the other body-composition cards reference your scale's entities;
+#   delete them or swap to yours.
+title: Fitness
+views:
+  - title: Run
+    path: run
+    icon: mdi:run-fast
+    cards:
+      - type: conditional
+        conditions:
+          - entity: binary_sensor.ifit_treadmill_moving
+            state: "on"
+        card:
+          type: markdown
+          content: "## 🏃 Workout in progress"
+      - type: grid
+        columns: 3
+        square: false
+        cards:
+          - type: gauge
+            entity: sensor.ifit_treadmill_speed
+            name: Speed
+            unit: mph
+            min: 0
+            max: 12
+            severity: {green: 0, yellow: 6, red: 10}
+          - type: gauge
+            entity: sensor.ifit_treadmill_incline
+            name: Incline
+            unit: "%"
+            min: 0
+            max: 15
+          - type: gauge
+            entity: sensor.treadmill_burn_rate
+            name: Burn
+            unit: kcal/h
+            min: 0
+            max: 900
+            severity: {green: 0, yellow: 400, red: 700}
+      - type: glance
+        title: This session
+        columns: 4
+        entities:
+          - {entity: sensor.ifit_treadmill_distance, name: Distance}
+          - {entity: sensor.ifit_treadmill_elapsed, name: Time}
+          - {entity: sensor.treadmill_pace, name: Pace}
+          - {entity: sensor.treadmill_energy_today, name: Calories}
+          - {entity: binary_sensor.ifit_treadmill_moving, name: Moving}
+          - {entity: binary_sensor.ifit_treadmill_connectivity, name: Link}
+      - type: history-graph
+        title: Workout profile (last hour)
+        hours_to_show: 1
+        entities:
+          - sensor.ifit_treadmill_speed
+          - sensor.ifit_treadmill_incline
+          - sensor.treadmill_burn_rate
+  - title: Body
+    path: body
+    icon: mdi:scale-bathroom
+    cards:
+      # >>> Replace sensor.YOUR_BODY_WEIGHT with your scale's weight entity. <<<
+      # The other rows are optional body-composition metrics — swap to your
+      # scale's entities or delete.
+      - type: glance
+        title: Current body
+        columns: 3
+        entities:
+          - {entity: sensor.YOUR_BODY_WEIGHT, name: Weight}
+          # - {entity: sensor.YOUR_BODY_FAT, name: Body Fat}
+          # - {entity: sensor.YOUR_MUSCLE_MASS, name: Muscle}
+          # - {entity: sensor.YOUR_BMI, name: BMI}
+          # - {entity: sensor.YOUR_BMR, name: BMR}
+          # - {entity: sensor.YOUR_BODY_WATER, name: Water}
+      - type: history-graph
+        title: Weight trend
+        hours_to_show: 720
+        entities:
+          - sensor.YOUR_BODY_WEIGHT
+  - title: Trends
+    path: trends
+    icon: mdi:chart-line
+    cards:
+      - type: statistics-graph
+        title: Calories / week
+        chart_type: bar
+        period: week
+        stat_types: [sum]
+        entities:
+          - sensor.treadmill_energy_today
+      - type: statistics-graph
+        title: Treadmill distance / day
+        chart_type: bar
+        period: day
+        stat_types: [max]
+        entities:
+          - sensor.ifit_treadmill_distance
+  - title: Suite
+    path: suite
+    icon: mdi:dumbbell
+    cards:
+      - type: markdown
+        content: >
+          ## Health & Fitness Suite
+
+          - ✅ **Treadmill** — live speed/incline/calories (this dashboard)
+
+          - ✅ **Body** — weight / composition (your scale)
+
+          - 🔜 **Home gym** — sets / reps / weight / power (planned node)
+
+          - 🔜 **O2 / sleep / recovery** — feed in as MQTT nodes

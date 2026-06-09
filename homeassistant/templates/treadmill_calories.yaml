@@ -1,0 +1,66 @@
+# Treadmill calories & pace — weight-aware (ACSM model).
+# Drop this in your HA `templates/` dir (config has: template: !include_dir_merge_list templates/)
+# then Developer Tools -> YAML -> Template entities -> Reload.
+#
+# >>> REPLACE THE PLACEHOLDER <<<
+#   sensor.YOUR_BODY_WEIGHT  ->  your body-weight entity (e.g. from a smart scale).
+#   kg or lb both work — the unit is auto-detected from the entity's unit_of_measurement.
+#
+# Treadmill telemetry entities expected (from the ESP32-S3 bridge MQTT discovery):
+#   sensor.ifit_treadmill_speed   (mph)
+#   sensor.ifit_treadmill_incline (%)
+
+- sensor:
+    - name: "Treadmill Burn Rate"
+      unique_id: treadmill_burn_rate
+      unit_of_measurement: "kcal/h"
+      state_class: measurement
+      icon: mdi:fire
+      availability: "{{ has_value('sensor.ifit_treadmill_speed') }}"
+      state: >
+        {% set mph = states('sensor.ifit_treadmill_speed') | float(0) %}
+        {% set grade = (states('sensor.ifit_treadmill_incline') | float(0)) / 100 %}
+        {% set w = states('sensor.YOUR_BODY_WEIGHT') | float(0) %}
+        {% set unit = state_attr('sensor.YOUR_BODY_WEIGHT','unit_of_measurement') %}
+        {% set wkg = (w * 0.453592) if (unit in ['lb','lbs']) else w %}
+        {% if mph <= 0 or wkg <= 0 %} 0
+        {% else %}
+          {% set s = mph * 26.8224 %}
+          {% if mph < 5.0 %}
+            {% set vo2 = 0.1*s + 1.8*s*grade + 3.5 %}
+          {% else %}
+            {% set vo2 = 0.2*s + 0.9*s*grade + 3.5 %}
+          {% endif %}
+          {{ ((vo2 * wkg / 1000 * 5) * 60) | round(0) }}
+        {% endif %}
+
+    - name: "Treadmill Pace"
+      unique_id: treadmill_pace
+      unit_of_measurement: "min/mi"
+      icon: mdi:speedometer
+      availability: "{{ has_value('sensor.ifit_treadmill_speed') }}"
+      state: >
+        {% set mph = states('sensor.ifit_treadmill_speed') | float(0) %}
+        {{ (60 / mph) | round(1) if mph > 0.3 else 0 }}
+
+- trigger:
+    - platform: time_pattern
+      seconds: "/10"
+    - platform: homeassistant
+      event: start
+    - platform: time
+      at: "00:00:00"
+      id: midnight
+  sensor:
+    - name: "Treadmill Energy Today"
+      unique_id: treadmill_energy_today
+      unit_of_measurement: "kcal"
+      state_class: total_increasing
+      icon: mdi:fire
+      state: >
+        {% if trigger.id == 'midnight' %} 0
+        {% else %}
+          {% set prev = states('sensor.treadmill_energy_today') | float(0) %}
+          {% set rate = states('sensor.treadmill_burn_rate') | float(0) %}
+          {{ (prev + rate / 360) | round(2) }}
+        {% endif %}

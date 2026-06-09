@@ -1,0 +1,14 @@
+# esp-idf build output & generated/downloaded
+build/
+managed_components/
+dependencies.lock
+sdkconfig
+sdkconfig.old
+
+# editor / OS / tooling
+.cache/
+.DS_Store
+*.swp
+.idea/
+.vscode/
+compile_commands.json
