@@ -1,10 +1,14 @@
-# Builds the firmware for every supported chip and publishes the browser
-# flasher (web/) to GitHub Pages. A tag publishes that release; a manual run
-# publishes the branch head, labelled with its short commit.
+# Builds the firmware for every supported chip.
+# - main (push or manual run): publishes the browser flasher (web/) to GitHub
+#   Pages, labelled with `git describe --tags`, so main sitting on a tag shows
+#   that version. Pages only serves deploys from its source branch: a deploy
+#   from a tag ref reports success and changes nothing (seen with 1.0.0).
+# - a tag: attaches the merged images to that tag's release.
 name: Web flasher
 
 on:
   push:
+    branches: [main]
     tags: ["*"]
   workflow_dispatch:
 
@@ -54,7 +58,23 @@ jobs:
             treadmill-${{ matrix.target }}.bin
             parts-${{ matrix.target }}/
 
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: images
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            images/treadmill-esp32s3.bin
+            images/treadmill-esp32c3.bin
+
   pages:
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -62,13 +82,23 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # git describe needs the tags
       - uses: actions/download-artifact@v4
         with:
           path: images
           merge-multiple: true
       - name: Assemble the site
         run: |
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then VERSION="${GITHUB_REF_NAME}"; else VERSION="dev-${GITHUB_SHA::7}"; fi
+          # The nearest tag when nothing that goes into the firmware changed
+          # since it (a docs or workflow commit after a tag still flashes that
+          # release); otherwise the full describe, e.g. 1.0.0-3-gabc1234.
+          TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          if [ -n "$TAG" ] && git diff --quiet "$TAG" HEAD -- main CMakeLists.txt partitions.csv 'sdkconfig.defaults*'; then
+            VERSION="$TAG"
+          else
+            VERSION="$(git describe --tags --always)"
+          fi
           mkdir -p site
           cp web/index.html site/
           cp -r images/parts-esp32s3 images/parts-esp32c3 site/
@@ -93,10 +123,3 @@ jobs:
           path: site
       - id: deploy
         uses: actions/deploy-pages@v4
-      - name: Attach the images to the release
-        if: github.ref_type == 'tag'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            images/treadmill-esp32s3.bin
-            images/treadmill-esp32c3.bin
