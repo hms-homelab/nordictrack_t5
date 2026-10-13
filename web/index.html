@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Treadmill Bridge Flasher</title>
+  <meta name="description" content="Flash the NordicTrack/iFit treadmill BLE-to-MQTT bridge onto an ESP32-S3 or ESP32-C3 from the browser.">
+  <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+  <style>
+    :root {
+      --bg: #f6f7f9; --card: #ffffff; --text: #1d2330; --muted: #5d6677;
+      --accent: #2f6fed; --border: #e2e5eb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #11141a; --card: #1a1f28; --text: #e8ebf1; --muted: #9aa3b5;
+              --accent: #6b9bff; --border: #2a303c; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text);
+           font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 640px; margin: 0 auto; padding: 48px 16px 64px; }
+    h1 { font-size: 1.7rem; margin: 0 0 4px; }
+    .sub { color: var(--muted); margin: 0 0 28px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 22px; margin-bottom: 18px; }
+    .card h2 { font-size: 1.05rem; margin: 0 0 10px; }
+    ol { margin: 0; padding-left: 1.2em; }
+    li { margin: 6px 0; }
+    code { background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
+           padding: 1px 5px; font-size: 0.9em; }
+    esp-web-install-button { display: block; margin: 6px 0 2px; }
+    esp-web-install-button button[slot="activate"] {
+      background: var(--accent); color: #fff; border: 0; border-radius: 8px;
+      padding: 12px 22px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+    .warn { color: var(--muted); font-size: 0.92rem; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Treadmill Bridge</h1>
+  <p class="sub">NordicTrack / iFit treadmill BLE to MQTT, with Home Assistant discovery.
+    Flash an ESP32-S3 or ESP32-C3 straight from this page.</p>
+
+  <div class="card">
+    <h2>1. Flash</h2>
+    <p>Plug the board in over USB, then press the button. The right image for your chip
+      (S3 or C3) is picked automatically.</p>
+    <esp-web-install-button manifest="manifest.json">
+      <button slot="activate">Connect and install</button>
+      <span slot="unsupported" class="warn">Your browser can't talk to USB devices.
+        Use Chrome or Edge on a desktop.</span>
+      <span slot="not-allowed" class="warn">This page must be opened over HTTPS.</span>
+    </esp-web-install-button>
+    <p class="warn">If the board doesn't show up, hold its BOOT button while plugging it in.</p>
+  </div>
+
+  <div class="card">
+    <h2>2. Set it up</h2>
+    <ol>
+      <li>After flashing, the board opens a WiFi network called <code>Treadmill-Setup</code>.</li>
+      <li>Join it from your phone; the setup page opens by itself.</li>
+      <li>Pick your WiFi, then enter your MQTT broker (host, port, user, password).</li>
+      <li>It reboots, finds the treadmill over Bluetooth, and Home Assistant discovers
+        an <strong>iFit Treadmill</strong> device.</li>
+    </ol>
+    <p class="warn">To get back to setup later, hold BOOT while powering it on.</p>
+  </div>
+
+  <p class="warn">Source, enclosure and docs:
+    <a href="https://github.com/hms-homelab/nordictrack_t5">github.com/hms-homelab/nordictrack_t5</a></p>
+</main>
+</body>
+</html>

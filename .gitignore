@@ -1,5 +1,7 @@
 # esp-idf build output & generated/downloaded
 build/
+build-*/
+treadmill-esp32*.bin
 managed_components/
 dependencies.lock
 sdkconfig

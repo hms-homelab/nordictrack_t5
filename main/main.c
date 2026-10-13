@@ -225,8 +225,8 @@ static void start_run_mode(void)
 void app_main(void)
 {
     ESP_LOGI(TAG, "==================================================");
-    ESP_LOGI(TAG, "   Treadmill S3 Bridge");
-    ESP_LOGI(TAG, "   HW: ESP32-S3 (SuperMini)  Role: BLE central");
+    ESP_LOGI(TAG, "   Treadmill Bridge");
+    ESP_LOGI(TAG, "   HW: %s (SuperMini)  Role: BLE central", CONFIG_IDF_TARGET);
     ESP_LOGI(TAG, "==================================================");
 
     /* 1. NVS flash + config. */

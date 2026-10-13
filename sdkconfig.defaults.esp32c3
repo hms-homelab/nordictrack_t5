@@ -1,0 +1,8 @@
+# ESP32-C3 overrides, applied by ESP-IDF after sdkconfig.defaults when the
+# target is esp32c3 (idf.py set-target esp32c3).
+
+# The C3's BOOT button is GPIO9 (GPIO0 is the S3's). Held low at boot = PROV mode.
+CONFIG_FORCE_PROV_GPIO=9
+
+# C3 SuperMini: blue status LED on GPIO8
+CONFIG_LED_GPIO=8

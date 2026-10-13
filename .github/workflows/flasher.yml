@@ -1,0 +1,102 @@
+# Builds the firmware for every supported chip and publishes the browser
+# flasher (web/) to GitHub Pages. A tag publishes that release; a manual run
+# publishes the branch head, labelled with its short commit.
+name: Web flasher
+
+on:
+  push:
+    tags: ["*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # attach the images to the tag's release
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        target: [esp32s3, esp32c3]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the app version comes from git describe
+      - name: Build and merge (${{ matrix.target }})
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.3
+          target: ${{ matrix.target }}
+          path: .
+          # The page flashes the four parts at their own offsets, so an update
+          # leaves NVS (0x9000: WiFi + MQTT) alone; a merged image from 0 pads
+          # that region with 0xFF and would wipe the settings on every install.
+          # The merged image is still built, for the release (esptool users).
+          command: >-
+            idf.py -B build-${{ matrix.target }}
+            -D SDKCONFIG=build-${{ matrix.target }}/sdkconfig
+            set-target ${{ matrix.target }} build &&
+            cd build-${{ matrix.target }} &&
+            esptool.py --chip ${{ matrix.target }} merge_bin
+            -o ../treadmill-${{ matrix.target }}.bin @flash_args &&
+            mkdir -p ../parts-${{ matrix.target }} &&
+            cp bootloader/bootloader.bin partition_table/partition-table.bin
+            ota_data_initial.bin treadmill_s3.bin ../parts-${{ matrix.target }}/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: treadmill-${{ matrix.target }}
+          path: |
+            treadmill-${{ matrix.target }}.bin
+            parts-${{ matrix.target }}/
+
+  pages:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: images
+          merge-multiple: true
+      - name: Assemble the site
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then VERSION="${GITHUB_REF_NAME}"; else VERSION="dev-${GITHUB_SHA::7}"; fi
+          mkdir -p site
+          cp web/index.html site/
+          cp -r images/parts-esp32s3 images/parts-esp32c3 site/
+          parts() {
+            printf '[ { "path": "%s/bootloader.bin", "offset": 0 }, { "path": "%s/partition-table.bin", "offset": 32768 }, { "path": "%s/ota_data_initial.bin", "offset": 61440 }, { "path": "%s/treadmill_s3.bin", "offset": 131072 } ]' "$1" "$1" "$1" "$1"
+          }
+          cat > site/manifest.json <<EOF
+          {
+            "name": "NordicTrack T5 treadmill bridge",
+            "version": "${VERSION}",
+            "new_install_prompt_erase": true,
+            "builds": [
+              { "chipFamily": "ESP32-S3", "parts": $(parts parts-esp32s3) },
+              { "chipFamily": "ESP32-C3", "parts": $(parts parts-esp32c3) }
+            ]
+          }
+          EOF
+          python3 -m json.tool site/manifest.json
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
+      - name: Attach the images to the release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            images/treadmill-esp32s3.bin
+            images/treadmill-esp32c3.bin

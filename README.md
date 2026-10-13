@@ -34,13 +34,23 @@ Connects to the treadmill over its proprietary iFit Bluetooth protocol (advertis
 - An MQTT broker (e.g., Mosquitto / EMQX)
 - Home Assistant with the MQTT integration enabled
 
+## Flash from the browser
+
+**<https://hms-homelab.github.io/nordictrack_t5/>** (Chrome or Edge on a desktop): plug in
+an ESP32-S3 or ESP32-C3 and press *Connect and install*; the image for your chip is picked
+automatically. Every tag rebuilds both images and republishes the page
+(`.github/workflows/flasher.yml`), and attaches them to the tag's release.
+
 ## Build & flash
 
 ```bash
 . $IDF_PATH/export.sh
-idf.py set-target esp32s3
+idf.py set-target esp32s3        # or esp32c3
 idf.py -p /dev/ttyACM0 flash monitor
 ```
+
+On an **ESP32-C3**, `sdkconfig.defaults.esp32c3` is applied on top: the setup button is
+GPIO9 (the C3's BOOT button) and the LED is GPIO8.
 
 First boot → no creds → it starts SoftAP **`Treadmill-Setup`** (captive portal) and a BLE
 provisioning service. Enter WiFi + MQTT (host/port/user/pass); it reboots into RUN mode,
